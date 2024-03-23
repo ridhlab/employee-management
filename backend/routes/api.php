@@ -28,4 +28,5 @@ Route::prefix('employees')->controller(EmployeesController::class)->group(functi
     Route::delete('/{id}/destroy', 'destroy')->name('employees.destroy');
     Route::post('/set-active', 'setActive')->name('employees.set-active');
     Route::post('/set-inactive', 'setInactive')->name('employees.set-inactive');
+    Route::post('/{id}/upload-identity-card', 'uploadIdentityCard')->name('employees.upload-identity-card');
 });
