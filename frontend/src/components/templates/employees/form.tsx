@@ -10,15 +10,18 @@ import { useParams, useRouter } from "next/navigation";
 import * as yup from "yup";
 import dayjs from "dayjs";
 import { storeEmployee, updateEmployee } from "@/api/employees";
-import { ROUTES } from "@/constants/routes";
+import { ENDPOINT_API, ROUTES } from "@/constants/routes";
 import { prompNotification } from "@/helpers/notification";
 import PageTemplate from "../base";
 import { BREADCRUMBS } from "@/commons/breadcrumbs";
-import { Card, DatePicker, Form, Input, Radio } from "antd";
+import { Card, DatePicker, Form, Input, Radio, Upload } from "antd";
 import ButtonAction from "@/components/shared/form/button-action";
 import Button from "@/components/shared/buttons/button";
 import React from "react";
 import { useRouterRefresh } from "@/hooks/useRouterRefresh";
+import { parsingRoute } from "@/helpers/routes";
+import { UploadRequestOption } from "rc-upload/lib/interface";
+import { IEmployeeDetailmData } from "@/interfaces/responses/employees";
 
 const schema = yup.object().shape({
     fullname: yup.string().required(getRequiredMessage("Nama Lengkap")),
@@ -51,13 +54,47 @@ export default function FormEmployeeTemplate({
     defaultValue,
 }: {
     editPage?: boolean;
-    defaultValue?: IEmployee;
+    defaultValue?: IEmployeeDetailmData;
 }) {
     const modalConfirm = useModalConfirm();
     const params = useParams();
     const { form, yupSync } = useFormUtility({ schema });
     const router = useRouter();
+
     useRouterRefresh();
+
+    const customRequest = async (options: UploadRequestOption<any>) => {
+        const { onSuccess, onError, file, onProgress } = options;
+
+        const fmData = new FormData();
+
+        fmData.append("identity_card", file);
+        try {
+            const response = await fetch(
+                parsingRoute(ENDPOINT_API.EMPLOYEES.UPLOAD_IDENTITY_CARD, {
+                    id: params.id as string,
+                }),
+                {
+                    method: "POST",
+                    body: fmData,
+                }
+            );
+            const jsonResponse = await response.json();
+            if (!response.ok) throw jsonResponse.message;
+            onSuccess("Upload successfully");
+            prompNotification({
+                message: "Sukses upload KTP",
+                method: "success",
+            });
+            router.refresh();
+        } catch (err) {
+            onError(new Error("Upload failed"));
+            prompNotification({
+                message: err as string,
+                method: "error",
+            });
+        }
+    };
 
     const onFinish = async () => {
         modalConfirm({
@@ -76,10 +113,18 @@ export default function FormEmployeeTemplate({
                     const response = editPage
                         ? await updateEmployee(params?.id, payload)
                         : await storeEmployee(payload);
-                    router.push(ROUTES.EMPLOYEES.INDEX);
+                    editPage
+                        ? router.push(ROUTES.EMPLOYEES.INDEX)
+                        : router.push(
+                              parsingRoute(ROUTES.EMPLOYEES.EDIT, {
+                                  id: response.data.id,
+                              })
+                          );
                     prompNotification({
                         method: "success",
-                        message: response.message,
+                        message: editPage
+                            ? response.message
+                            : "Sukses tambah karyawan, silahkan upload KTP",
                     });
                 } catch (error) {
                     prompNotification({
@@ -163,6 +208,29 @@ export default function FormEmployeeTemplate({
                             </Radio>
                         </Radio.Group>
                     </Form.Item>
+                    {editPage ? (
+                        <Form.Item label="KTP">
+                            <Upload
+                                maxCount={1}
+                                listType="picture-card"
+                                accept="image/png, image/jpg"
+                                customRequest={customRequest}
+                                defaultFileList={
+                                    editPage && defaultValue.identity_card_url
+                                        ? [
+                                              {
+                                                  url: defaultValue.identity_card_url,
+                                                  name: defaultValue.identity_card_filename,
+                                                  uid: defaultValue.identity_card_url,
+                                              },
+                                          ]
+                                        : undefined
+                                }
+                            >
+                                Upload KTP
+                            </Upload>
+                        </Form.Item>
+                    ) : null}
                     <ButtonAction
                         actions={[
                             <Button href={ROUTES.EMPLOYEES.INDEX} key="back">

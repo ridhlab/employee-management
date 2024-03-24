@@ -32,7 +32,6 @@ export default function EmployeeIndexTemplate({
 
     const modalConfirm = useModalConfirm();
     const { selectedRowKeys, setSelectedRowKeys } = useSelectedRowKeys();
-    console.log(selectedRowKeys);
 
     const columns: ColumnsType<IEmployee> = [
         {

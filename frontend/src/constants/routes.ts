@@ -21,5 +21,7 @@ export const ENDPOINT_API = {
         DESTROY: BASE_API_URL + "/employees/:id/destroy",
         SET_ACTIVE: BASE_API_URL + "/employees/set-active",
         SET_INACTIVE: BASE_API_URL + "/employees/set-inactive",
+        UPLOAD_IDENTITY_CARD:
+            BASE_API_URL + "/employees/:id/upload-identity-card",
     },
 };
